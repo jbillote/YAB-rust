@@ -10,6 +10,7 @@ use serenity::{
 use std::env;
 
 mod commands;
+mod models;
 
 struct Handler;
 
@@ -19,18 +20,27 @@ impl EventHandler for Handler {
         if let Interaction::Command(command) = interaction {
             println!("Received command: {}", command.data.name.as_str());
 
-            let content = match command.data.name.as_str() {
-                "mbtl" => Some(commands::mbtl::run(&command.data.options())),
-                _ => Some("not implemented:(".to_string()),
-            };
-
-            if let Some(content) = content {
-                let data = CreateInteractionResponseMessage::new().content(content);
+            if command.data.name.as_str() == "mbtl" {
+                let embed = commands::mbtl::run(&command.data.options()).await;
+                let data = CreateInteractionResponseMessage::new().add_embed(embed);
                 let builder = CreateInteractionResponse::Message(data);
                 if let Err(why) = command.create_response(&ctx.http, builder).await {
                     println!("Cannot respond to command: {why}");
                 }
-            };
+            }
+
+            // let content = match command.data.name.as_str() {
+            //     "mbtl" => Some(commands::mbtl::run(&command.data.options())),
+            //     _ => todo!(),
+            // };
+
+            // if let Some(content) = content {
+            //     let data = CreateInteractionResponseMessage::new().add_embed(content.await);
+            //     let builder = CreateInteractionResponse::Message(data);
+            //     if let Err(why) = command.create_response(&ctx.http, builder).await {
+            //         println!("Cannot respond to command: {why}");
+            //     }
+            // };
         }
     }
 

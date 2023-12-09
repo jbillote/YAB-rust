@@ -1,9 +1,12 @@
+use crate::models::attack::Attack;
+
+use reqwest::Error;
 use serenity::{
-    builder::{CreateCommand, CreateCommandOption},
+    builder::{CreateCommand, CreateCommandOption, CreateEmbed},
     model::application::{CommandOptionType, ResolvedOption, ResolvedValue},
 };
 
-pub fn run(options: &[ResolvedOption]) -> String {
+pub async fn run(options: &[ResolvedOption<'_>]) -> CreateEmbed {
     let character = if let Some(ResolvedOption {
         value: ResolvedValue::String(character),
         ..
@@ -11,18 +14,29 @@ pub fn run(options: &[ResolvedOption]) -> String {
     {
         character.to_string()
     } else {
-        "shouldn't happen".to_string()
+        "".to_string()
     };
 
-    if let Some(ResolvedOption {
+    let input = if let Some(ResolvedOption {
         value: ResolvedValue::String(input),
         ..
     }) = options.get(1)
     {
-        return format!("{},{}", character, input);
+        input.to_string()
     } else {
-        return character;
-    }
+        "".to_string()
+    };
+
+    let url = format!("http://127.0.0.1:8080/character/{character}/{input}",
+        character = character, input = input);
+    let response = reqwest::get(&url).await.unwrap();
+    let attack: Attack = response.json().await.unwrap();
+
+    // let attack: Attack = get_attack(character, input).await;
+    let embed = CreateEmbed::new()
+        .title(attack.name);
+
+    return embed;
 }
 
 pub fn register() -> CreateCommand {
@@ -34,6 +48,15 @@ pub fn register() -> CreateCommand {
         )
         .add_option(
             CreateCommandOption::new(CommandOptionType::String, "input", "Move input")
-                .required(false),
+                .required(true),
         )
+}
+
+async fn get_attack(character: String, input: String) -> Attack {
+    let url = format!("http://127.0.0.1:8080/character/{character}/{input}",
+        character = character, input = input);
+    let response = reqwest::get(&url).await.unwrap();
+    let attack: Attack = response.json().await.unwrap();
+
+    return attack;
 }
