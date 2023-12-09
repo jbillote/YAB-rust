@@ -27,14 +27,16 @@ pub async fn run(options: &[ResolvedOption<'_>]) -> CreateEmbed {
         "".to_string()
     };
 
-    let url = format!("http://127.0.0.1:8080/character/{character}/{input}",
-        character = character, input = input);
+    let url = format!(
+        "http://127.0.0.1:8080/character/{character}/{input}",
+        character = character,
+        input = input
+    );
     let response = reqwest::get(&url).await.unwrap();
     let attack: Attack = response.json().await.unwrap();
 
     // let attack: Attack = get_attack(character, input).await;
-    let embed = CreateEmbed::new()
-        .title(attack.name);
+    let embed = CreateEmbed::new().title(attack.name);
 
     return embed;
 }
@@ -53,8 +55,11 @@ pub fn register() -> CreateCommand {
 }
 
 async fn get_attack(character: String, input: String) -> Attack {
-    let url = format!("http://127.0.0.1:8080/character/{character}/{input}",
-        character = character, input = input);
+    let url = format!(
+        "http://127.0.0.1:8080/character/{character}/{input}",
+        character = character,
+        input = input
+    );
     let response = reqwest::get(&url).await.unwrap();
     let attack: Attack = response.json().await.unwrap();
 

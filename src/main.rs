@@ -28,19 +28,6 @@ impl EventHandler for Handler {
                     println!("Cannot respond to command: {why}");
                 }
             }
-
-            // let content = match command.data.name.as_str() {
-            //     "mbtl" => Some(commands::mbtl::run(&command.data.options())),
-            //     _ => todo!(),
-            // };
-
-            // if let Some(content) = content {
-            //     let data = CreateInteractionResponseMessage::new().add_embed(content.await);
-            //     let builder = CreateInteractionResponse::Message(data);
-            //     if let Err(why) = command.create_response(&ctx.http, builder).await {
-            //         println!("Cannot respond to command: {why}");
-            //     }
-            // };
         }
     }
 
