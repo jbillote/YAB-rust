@@ -27,16 +27,26 @@ pub async fn run(options: &[ResolvedOption<'_>]) -> CreateEmbed {
         "".to_string()
     };
 
-    let url = format!(
-        "http://127.0.0.1:8080/character/{character}/{input}",
-        character = character,
-        input = input
-    );
-    let response = reqwest::get(&url).await.unwrap();
-    let attack: Attack = response.json().await.unwrap();
-
-    // let attack: Attack = get_attack(character, input).await;
-    let embed = CreateEmbed::new().title(attack.name);
+    let attack: Attack = get_attack(character, input).await;
+    let embed = CreateEmbed::new()
+        .title(attack.name)
+        .fields(vec![
+            ("Input", attack.input, true),
+            ("", "".to_string(), true),
+            ("", "".to_string(), true),
+            ("Damage", attack.damage, true),
+            ("Block", attack.block, true),
+            ("Cancel", attack.cancel, true),
+            ("Property", attack.property, true),
+            ("Cost", attack.cost, true),
+            ("Attribute", attack.attribute, true),
+            ("Startup", attack.startup, true),
+            ("Active", attack.active, true),
+            ("Recovery", attack.recovery, true),
+            ("Overall", attack.overall, true),
+            ("Advantage", attack.advantage, true),
+            ("Invuln", attack.invuln, true), 
+        ]);
 
     return embed;
 }
