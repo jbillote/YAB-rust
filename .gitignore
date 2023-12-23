@@ -1,3 +1,4 @@
 /target
 /.idea
 config_dev.toml
+Secrets.toml

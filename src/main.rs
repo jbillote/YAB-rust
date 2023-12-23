@@ -1,17 +1,18 @@
+use anyhow::anyhow;
 use regex::Regex;
 use serde::Deserialize;
 use serenity::{
-    all::{
-        Context, CreateInteractionResponse, CreateInteractionResponseMessage, EventHandler,
-        GatewayIntents,
-    },
     async_trait,
-    builder::{CreateEmbed, CreateMessage},
-    model::{application::Command, application::Interaction, channel::Message, gateway::Ready},
-    Client,
+    builder::{CreateInteractionResponse, CreateInteractionResponseMessage},
+    client::{Client, Context, EventHandler},
+    model::{
+        application::{Command, Interaction},
+        channel::Message,
+        gateway::{GatewayIntents, Ready},
+    },
 };
-use std::{env, fs, process::exit};
-use toml;
+use shuttle_secrets::SecretStore;
+use tracing::{error, info};
 
 mod commands;
 mod models;
@@ -28,8 +29,7 @@ struct Config {
 #[derive(Deserialize)]
 struct Discord {
     pub token: String,
-    pub statuses: Vec<String>,
-    pub status_interval: i64,
+    pub status: String,
 }
 
 #[derive(Deserialize)]
@@ -41,14 +41,14 @@ struct FrameData {
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
-            println!("Received command: {}", command.data.name.as_str());
+            info!("Received command: {}", command.data.name.as_str());
 
             if command.data.name.as_str() == "mbtl" {
                 let embed = commands::mbtl::run(&command.data.options()).await;
                 let data = CreateInteractionResponseMessage::new().add_embed(embed);
                 let builder = CreateInteractionResponse::Message(data);
                 if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    println!("Cannot respond to command: {why}");
+                    error!("Cannot respond to command: {why}");
                 }
             }
         }
@@ -67,41 +67,30 @@ impl EventHandler for Handler {
     }
 
     async fn ready(&self, ctx: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
+        info!("{} is connected!", ready.user.name);
 
         let mbtl_command =
             Command::create_global_command(&ctx.http, commands::mbtl::register()).await;
-        println!("Added slash command {}", mbtl_command.unwrap().name);
+        info!("Added slash command {}", mbtl_command.unwrap().name);
     }
 }
 
-#[tokio::main]
-async fn main() {
-    let args: Vec<String> = env::args().collect();
-    let config_path = &args[1];
-    let config_file = match fs::read_to_string(config_path) {
-        Ok(c) => c,
-        Err(_) => {
-            eprintln!("Could not read file {}", config_path);
-            exit(1);
-        }
+#[shuttle_runtime::main]
+async fn serenity(
+    #[shuttle_secrets::Secrets] secret_store: SecretStore,
+) -> shuttle_serenity::ShuttleSerenity {
+    let token = if let Some(token) = secret_store.get("DISCORD_TOKEN") {
+        token
+    } else {
+        return Err(anyhow!("DISCORD_TOKEN was not found").into());
     };
-    let config: Config = match toml::from_str(&config_file) {
-        Ok(c) => c,
-        Err(_) => {
-            eprintln!("Unable to read data from {}", config_path);
-            exit(1);
-        }
-    };
-    let token = config.discord.token;
+
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    let mut client = Client::builder(&token, intents)
+    let client = Client::builder(&token, intents)
         .event_handler(Handler)
         .await
         .expect("Error creating client");
 
-    if let Err(why) = client.start().await {
-        println!("Client error: {why:?}");
-    }
+    Ok(client.into())
 }
