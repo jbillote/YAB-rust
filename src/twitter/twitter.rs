@@ -43,6 +43,7 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
                                 .url(&author_url),
                         )
                         .description(info.text.replace(split_description.last().unwrap(), ""))
+                        .color(Color::BLUE)
                         .footer(
                             CreateEmbedFooter::new("Twitter")
                                 .icon_url("http://i.toukat.moe/twitter_logo.png"),
