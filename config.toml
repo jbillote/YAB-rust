@@ -1,7 +1,0 @@
-[discord]
-token = ""
-statuses = []
-status_interval = 0
-
-[frame_data]
-host = ""
