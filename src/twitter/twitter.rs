@@ -5,7 +5,7 @@ use reqwest::Error;
 use serenity::{
     builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage},
     client::Context,
-    model::{channel::Message, timestamp::Timestamp},
+    model::{channel::Message, colour::Color, timestamp::Timestamp},
 };
 
 pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
@@ -69,6 +69,7 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
                         .url(&author_url),
                 )
                 .description(info.text.replace(split_description.last().unwrap(), ""))
+                .color(Color::BLUE)
                 .footer(
                     CreateEmbedFooter::new("Twitter")
                         .icon_url("http://i.toukat.moe/twitter_logo.png"),
