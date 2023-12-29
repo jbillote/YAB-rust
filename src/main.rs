@@ -61,6 +61,7 @@ impl EventHandler for Handler {
                 Regex::new(r"(\bx|\btwitter)\.com\/\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
             if twitter_regex.is_match(m) {
                 let url = twitter_regex.find(m).unwrap();
+                info!("Twitter link found: {}", url.as_str());
                 twitter::twitter::generate_twitter_embed(&ctx, &msg, url.as_str()).await;
             }
         }
