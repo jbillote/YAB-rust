@@ -23,53 +23,30 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
     let mut embeds: Vec<CreateEmbed> = Vec::new();
     let mut videos: Vec<String> = Vec::new();
 
+    embeds.push(
+        CreateEmbed::new()
+            .title("Original Tweet")
+            .url(&info.tweet.url)
+            .author(
+                CreateEmbedAuthor::new(&author)
+                    .icon_url(&info.tweet.author.avatar_url)
+                    .url(&info.tweet.author.url),
+            )
+            .description(&info.tweet.text)
+            .color(Color::BLUE)
+            .footer(
+                CreateEmbedFooter::new("Twitter")
+                    .icon_url("https://abs.twimg.com/icons/apple-touch-icon-192x192.png"),
+            )
+            .timestamp(Timestamp::from_unix_timestamp(info.tweet.timestamp).unwrap()),
+    );
+
     for link in info.tweet.media.media {
         if link.kind == "photo" {
-            if embeds.is_empty() {
-                embeds.push(
-                    CreateEmbed::new()
-                        .title("Original Tweet")
-                        .url(&info.tweet.url)
-                        .author(
-                            CreateEmbedAuthor::new(&author)
-                                .icon_url(&info.tweet.author.avatar_url)
-                                .url(&info.tweet.author.url),
-                        )
-                        .description(&info.tweet.text)
-                        .color(Color::BLUE)
-                        .footer(
-                            CreateEmbedFooter::new("Twitter")
-                                .icon_url("http://i.toukat.moe/twitter_logo.png"),
-                        )
-                        .timestamp(Timestamp::from_unix_timestamp(info.tweet.timestamp).unwrap())
-                        .image(link.url),
-                );
-            } else {
-                embeds.push(CreateEmbed::new().url(&info.tweet.url).image(link.url));
-            }
+            embeds.push(CreateEmbed::new().url(&info.tweet.url).image(link.url))
         } else if link.kind == "video" {
             videos.push(link.url);
         }
-    }
-
-    if embeds.is_empty() {
-        embeds.push(
-            CreateEmbed::new()
-                .title("Original Tweet")
-                .url(&info.tweet.url)
-                .author(
-                    CreateEmbedAuthor::new(&author)
-                        .icon_url(&info.tweet.author.avatar_url)
-                        .url(&info.tweet.author.url),
-                )
-                .description(&info.tweet.text)
-                .color(Color::BLUE)
-                .footer(
-                    CreateEmbedFooter::new("Twitter")
-                        .icon_url("http://i.toukat.moe/twitter_logo.png"),
-                )
-                .timestamp(Timestamp::from_unix_timestamp(info.tweet.timestamp).unwrap()),
-        );
     }
 
     let builder = CreateMessage::new().embeds(embeds);
