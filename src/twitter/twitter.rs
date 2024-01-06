@@ -99,7 +99,9 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
             for link in media.media.clone() {
                 match link.kind.as_str() {
                     "gif" => quote_videos.push(link.url),
-                    "photo" => quote_embeds.push(CreateEmbed::new().url(&quote.url).image(link.url)),
+                    "photo" => {
+                        quote_embeds.push(CreateEmbed::new().url(&quote.url).image(link.url))
+                    }
                     "video" => quote_videos.push(link.url),
                     _ => info!("Unknown type: {}", link.kind),
                 }

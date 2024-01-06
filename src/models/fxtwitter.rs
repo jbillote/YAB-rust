@@ -2,28 +2,18 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct FXTwitter {
-    pub tweet: BaseTweet,
+    pub tweet: Tweet,
 }
 
 #[derive(Deserialize)]
-pub struct BaseTweet {
+pub struct Tweet {
     pub url: String,
     pub text: String,
     pub author: Author,
     #[serde(alias = "created_timestamp")]
     pub timestamp: i64,
     pub media: Option<Media>,
-    pub quote: Option<QuoteTweet>,
-}
-
-#[derive(Deserialize)]
-pub struct QuoteTweet {
-    pub url: String,
-    pub text: String,
-    pub author: Author,
-    #[serde(alias = "created_timestamp")]
-    pub timestamp: i64,
-    pub media: Option<Media>,
+    pub quote: Option<Box<Tweet>>,
 }
 
 #[derive(Deserialize)]
