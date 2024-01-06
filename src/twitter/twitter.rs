@@ -61,6 +61,59 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
             error!("Error sending message: {why:?}");
         }
     }
+
+    if let Some(quote) = &info.tweet.quote {
+        info!("Quote tweet found: {}", quote.url);
+
+        let quote_author = format!(
+            "{user_name} (@{screen_name})",
+            user_name = quote.author.user_name,
+            screen_name = quote.author.screen_name
+        );
+
+        let mut quote_embeds: Vec<CreateEmbed> = Vec::new();
+        let mut quote_videos: Vec<String> = Vec::new();
+
+        quote_embeds.push(
+            CreateEmbed::new()
+                .title("Quoted Tweet")
+                .url(&quote.url)
+                .author(
+                    CreateEmbedAuthor::new(quote_author)
+                        .icon_url(&quote.author.avatar_url)
+                        .url(&quote.author.url),
+                )
+                .description(&quote.text)
+                .color(Color::BLUE)
+                .footer(
+                    CreateEmbedFooter::new("Twitter")
+                        .icon_url("https://abs.twimg.com/icons/apple-touch-icon-192x192.png"),
+                )
+                .timestamp(Timestamp::from_unix_timestamp(quote.timestamp).unwrap()),
+        );
+
+
+        for link in quote.media.media.clone() {
+            if link.kind == "photo" {
+                quote_embeds.push(CreateEmbed::new().url(&quote.url).image(link.url));
+            } else if link.kind == "video" {
+                quote_videos.push(link.url);
+            }
+        }
+
+        let quote_builder = CreateMessage::new().embeds(quote_embeds);
+        let quote_res = msg.channel_id.send_message(&ctx.http, quote_builder).await;
+
+        if let Err(why) = quote_res {
+            error!("Error sending message: {why:?}");
+        }
+
+        for link in quote_videos {
+            if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
+                error!("Error sending message: {why:?}");
+            }
+        }
+    }
 }
 
 async fn get_tweet_info(path: &str) -> FXTwitter {
