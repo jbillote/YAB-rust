@@ -41,11 +41,13 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
             .timestamp(Timestamp::from_unix_timestamp(info.tweet.timestamp).unwrap()),
     );
 
-    for link in info.tweet.media.media {
-        if link.kind == "photo" {
-            embeds.push(CreateEmbed::new().url(&info.tweet.url).image(link.url))
-        } else if link.kind == "video" {
-            videos.push(link.url);
+    if let Some(media) = info.tweet.media {
+        for link in media.media {
+            match link.kind.as_str() {
+                "photo" => embeds.push(CreateEmbed::new().url(&info.tweet.url).image(link.url)),
+                "video" => videos.push(link.url),
+                _ => info!("Unknown type: {}", link.kind),
+            }
         }
     }
 
@@ -92,12 +94,13 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
                 .timestamp(Timestamp::from_unix_timestamp(quote.timestamp).unwrap()),
         );
 
-
-        for link in quote.media.media.clone() {
-            if link.kind == "photo" {
-                quote_embeds.push(CreateEmbed::new().url(&quote.url).image(link.url));
-            } else if link.kind == "video" {
-                quote_videos.push(link.url);
+        if let Some(media) = &quote.media {
+            for link in media.media.clone() {
+                match link.kind.as_str() {
+                    "photo" => quote_embeds.push(CreateEmbed::new().url(&quote.url).image(link.url)),
+                    "video" => quote_videos.push(link.url),
+                    _ => info!("Unknown type: {}", link.kind),
+                }
             }
         }
 

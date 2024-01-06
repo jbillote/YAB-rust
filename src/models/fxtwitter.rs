@@ -12,8 +12,7 @@ pub struct BaseTweet {
     pub author: Author,
     #[serde(alias = "created_timestamp")]
     pub timestamp: i64,
-    #[serde(default)]
-    pub media: Media,
+    pub media: Option<Media>,
     pub quote: Option<QuoteTweet>,
 }
 
@@ -24,8 +23,7 @@ pub struct QuoteTweet {
     pub author: Author,
     #[serde(alias = "created_timestamp")]
     pub timestamp: i64,
-    #[serde(default)]
-    pub media: Media,
+    pub media: Option<Media>,
 }
 
 #[derive(Deserialize)]
@@ -38,7 +36,7 @@ pub struct Author {
     pub url: String,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize)]
 pub struct Media {
     #[serde(alias = "all")]
     pub media: Vec<Attachment>,
