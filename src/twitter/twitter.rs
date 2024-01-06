@@ -44,6 +44,7 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
     if let Some(media) = info.tweet.media {
         for link in media.media {
             match link.kind.as_str() {
+                "gif" => videos.push(link.url),
                 "photo" => embeds.push(CreateEmbed::new().url(&info.tweet.url).image(link.url)),
                 "video" => videos.push(link.url),
                 _ => info!("Unknown type: {}", link.kind),
@@ -97,6 +98,7 @@ pub async fn generate_twitter_embed(ctx: &Context, msg: &Message, url: &str) {
         if let Some(media) = &quote.media {
             for link in media.media.clone() {
                 match link.kind.as_str() {
+                    "gif" => quote_videos.push(link.url),
                     "photo" => quote_embeds.push(CreateEmbed::new().url(&quote.url).image(link.url)),
                     "video" => quote_videos.push(link.url),
                     _ => info!("Unknown type: {}", link.kind),
