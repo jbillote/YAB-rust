@@ -1,4 +1,4 @@
 /target
 /.idea
-config_dev.toml
+config.*.toml
 Secrets*.toml

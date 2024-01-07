@@ -8,15 +8,16 @@ embeds working on mobile.
 
 ## Hosting/Deployment
 
-YAB is designed to be deployed on Shuttle. A sample ``Secrets.toml`` file that 
-contains required keys can be found as ``Secrets.dev.toml.template``. As of
-now, the only required key is the Discord bot token.
+YAB is designed to be run on bare-metal. A sample ``config.toml`` file that 
+contains required keys can be found as ``config.toml``. You can specify which 
+config file to use when running YAB by specifying it as an argument ie:
+
+```
+cargo run /path/to/config
+```
 
 ## Known Issues
 
 * Videos from Twitter are not included in the embed. This appears to be a 
 problem on Discord's end, as the issue seems to be present in other languages 
 and libraries.
-* Tweet text is sometimes cut off, despite the character limit not being 
-reached. This is in part due to the API used to fetch tweet information, but 
-the root cause is being investigated.

@@ -1,17 +1,16 @@
-use anyhow::anyhow;
 use regex::Regex;
 use serde::Deserialize;
 use serenity::{
-    async_trait,
-    builder::{CreateInteractionResponse, CreateInteractionResponseMessage},
-    client::{Client, Context, EventHandler},
-    model::{
-        application::{Command, Interaction},
-        channel::Message,
-        gateway::{GatewayIntents, Ready},
+    all::{
+        Context, CreateInteractionResponse, CreateInteractionResponseMessage, EventHandler,
+        GatewayIntents,
     },
+    async_trait,
+    model::{application::Command, application::Interaction, channel::Message, gateway::Ready},
+    Client,
 };
-use shuttle_secrets::SecretStore;
+use std::{env, fs, process::exit};
+use toml;
 use tracing::{error, info};
 
 mod commands;
@@ -29,7 +28,8 @@ struct Config {
 #[derive(Deserialize)]
 struct Discord {
     pub token: String,
-    pub status: String,
+    pub statuses: Vec<String>,
+    pub status_interval: i64,
 }
 
 #[derive(Deserialize)]
@@ -48,7 +48,7 @@ impl EventHandler for Handler {
                 let data = CreateInteractionResponseMessage::new().add_embed(embed);
                 let builder = CreateInteractionResponse::Message(data);
                 if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    error!("Cannot respond to command: {why}");
+                    info!("Cannot respond to command: {why}");
                 }
             }
         }
@@ -61,7 +61,6 @@ impl EventHandler for Handler {
                 Regex::new(r"(\bx|\btwitter)\.com\/\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
             if twitter_regex.is_match(m) {
                 let url = twitter_regex.find(m).unwrap();
-                info!("Twitter link found: {}", url.as_str());
                 twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str()).await;
             }
         }
@@ -76,22 +75,34 @@ impl EventHandler for Handler {
     }
 }
 
-#[shuttle_runtime::main]
-async fn serenity(
-    #[shuttle_secrets::Secrets] secret_store: SecretStore,
-) -> shuttle_serenity::ShuttleSerenity {
-    let token = if let Some(token) = secret_store.get("DISCORD_TOKEN") {
-        token
-    } else {
-        return Err(anyhow!("DISCORD_TOKEN was not found").into());
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = env::args().collect();
+    let config_path = &args[1];
+    let config_file = match fs::read_to_string(config_path) {
+        Ok(c) => c,
+        Err(_) => {
+            error!("Could not read file {}", config_path);
+            exit(1);
+        }
     };
-
+    let config: Config = match toml::from_str(&config_file) {
+        Ok(c) => c,
+        Err(_) => {
+            error!("Unable to read data from {}", config_path);
+            exit(1);
+        }
+    };
+    let token = config.discord.token;
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    let client = Client::builder(&token, intents)
+    let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .await
         .expect("Error creating client");
 
-    Ok(client.into())
+    if let Err(why) = client.start().await {
+        error!("Client error: {why:?}");
+        exit(1);
+    }
 }
