@@ -62,7 +62,7 @@ impl EventHandler for Handler {
             if twitter_regex.is_match(m) {
                 let url = twitter_regex.find(m).unwrap();
                 info!("Twitter link found: {}", url.as_str());
-                twitter::twitter::generate_twitter_embed(&ctx, &msg, url.as_str()).await;
+                twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str()).await;
             }
         }
     }
