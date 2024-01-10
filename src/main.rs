@@ -56,12 +56,19 @@ impl EventHandler for Handler {
 
     async fn message(&self, ctx: Context, msg: Message) {
         let split_message = msg.content.split(" ");
-        for m in split_message {
+        let mut supress_quote = false;
+        for (ndx, m) in split_message.enumerate() {
+            supress_quote = if ndx == 0 && m == ".nq" {
+                true
+            } else {
+                supress_quote
+            };
             let twitter_regex =
                 Regex::new(r"(\bx|\btwitter)\.com\/\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
             if twitter_regex.is_match(m) {
                 let url = twitter_regex.find(m).unwrap();
-                twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str()).await;
+                twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str(), supress_quote)
+                    .await;
             }
         }
     }

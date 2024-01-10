@@ -9,7 +9,7 @@ use serenity::{
 };
 use tracing::{error, info};
 
-pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str) {
+pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supress_quote: bool) {
     let trim_regex = Regex::new(r"\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
     let uri = trim_regex.find(url).unwrap();
     let info = get_tweet_info(uri.as_str()).await;
@@ -29,20 +29,22 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str) {
         }
     }
 
-    if let Some(quote) = &info.tweet.quote {
-        info!("Quote tweet found: {}", quote.url);
+    if !supress_quote {
+        if let Some(quote) = &info.tweet.quote {
+            info!("Quote tweet found: {}", quote.url);
 
-        let quote_tweet = generate_tweet_embeds(quote, true).await;
-        let quote_builder = CreateMessage::new().embeds(quote_tweet.0);
-        let quote_res = msg.channel_id.send_message(&ctx.http, quote_builder).await;
+            let quote_tweet = generate_tweet_embeds(quote, true).await;
+            let quote_builder = CreateMessage::new().embeds(quote_tweet.0);
+            let quote_res = msg.channel_id.send_message(&ctx.http, quote_builder).await;
 
-        if let Err(why) = quote_res {
-            error!("Error sending message: {why:?}");
-        }
-
-        for link in quote_tweet.1 {
-            if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
+            if let Err(why) = quote_res {
                 error!("Error sending message: {why:?}");
+            }
+
+            for link in quote_tweet.1 {
+                if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
+                    error!("Error sending message: {why:?}");
+                }
             }
         }
     }
