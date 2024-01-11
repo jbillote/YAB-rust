@@ -12,6 +12,7 @@ use serenity::{
 use std::{env, fs, process::exit};
 use toml;
 use tracing::{error, info};
+use tracing_subscriber::fmt;
 
 mod commands;
 mod models;
@@ -84,6 +85,8 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     let args: Vec<String> = env::args().collect();
     let config_path = &args[1];
     let config_file = match fs::read_to_string(config_path) {
