@@ -60,37 +60,68 @@ async fn generate_tweet_embeds(tweet: &Tweet, is_quote: bool) -> (Vec<CreateEmbe
     let mut embeds: Vec<CreateEmbed> = Vec::new();
     let mut videos: Vec<String> = Vec::new();
 
-    embeds.push(
-        CreateEmbed::new()
-            .title(if is_quote {
-                "Quoted Tweet"
-            } else {
-                "Original Tweet"
-            })
-            .url(&tweet.url)
-            .author(
-                CreateEmbedAuthor::new(author)
-                    .icon_url(&tweet.author.avatar_url)
-                    .url(&tweet.author.url),
-            )
-            .description(&tweet.text)
-            .color(Color::BLUE)
-            .footer(
-                CreateEmbedFooter::new("Twitter")
-                    .icon_url("https://abs.twimg.com/icons/apple-touch-icon-192x192.png"),
-            )
-            .timestamp(Timestamp::from_unix_timestamp(tweet.timestamp).unwrap()),
-    );
+    
 
     if let Some(media) = &tweet.media {
         for link in media.media.clone() {
             match link.kind.as_str() {
                 "gif" => videos.push(link.url),
-                "photo" => embeds.push(CreateEmbed::new().url(&tweet.url).image(link.url)),
+                "photo" => {
+                    if embeds.is_empty() {
+                        embeds.push(
+                            CreateEmbed::new()
+                                .title(if is_quote {
+                                    "Quoted Tweet"
+                                } else {
+                                    "Original Tweet"
+                                })
+                                .url(&tweet.url)
+                                .author(
+                                    CreateEmbedAuthor::new(&author)
+                                        .icon_url(&tweet.author.avatar_url)
+                                        .url(&tweet.author.url),
+                                )
+                                .description(&tweet.text)
+                                .image(link.url)
+                                .color(Color::BLUE)
+                                .footer(
+                                    CreateEmbedFooter::new("Twitter")
+                                        .icon_url("https://abs.twimg.com/icons/apple-touch-icon-192x192.png"),
+                                )
+                                .timestamp(Timestamp::from_unix_timestamp(tweet.timestamp).unwrap()),
+                        );
+                    } else {
+                        embeds.push(CreateEmbed::new().url(&tweet.url).image(link.url))
+                    }
+                },
                 "video" => videos.push(link.url),
                 _ => info!("Unknown type: {}", link.kind),
             }
         }
+    }
+
+    if embeds.is_empty() {
+        embeds.push(
+            CreateEmbed::new()
+                .title(if is_quote {
+                    "Quoted Tweet"
+                } else {
+                    "Original Tweet"
+                })
+                .url(&tweet.url)
+                .author(
+                    CreateEmbedAuthor::new(&author)
+                        .icon_url(&tweet.author.avatar_url)
+                        .url(&tweet.author.url),
+                )
+                .description(&tweet.text)
+                .color(Color::BLUE)
+                .footer(
+                    CreateEmbedFooter::new("Twitter")
+                        .icon_url("https://abs.twimg.com/icons/apple-touch-icon-192x192.png"),
+                )
+                .timestamp(Timestamp::from_unix_timestamp(tweet.timestamp).unwrap()),
+        );
     }
 
     return (embeds, videos);
