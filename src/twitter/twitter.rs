@@ -14,36 +14,40 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supres
     let uri = trim_regex.find(url).unwrap();
     let info = get_tweet_info(uri.as_str()).await;
 
-    let main_tweet = generate_tweet_embeds(&info.tweet, false).await;
+    if let Some(media) = &info.tweet.media {
+        if media.videos.is_some() || media.photos.clone().is_some_and(|p| p.len() > 1) {
+            let main_tweet = generate_tweet_embeds(&info.tweet, false).await;
 
-    let builder = CreateMessage::new().embeds(main_tweet.0);
-    let res = msg.channel_id.send_message(&ctx.http, builder).await;
+            let builder = CreateMessage::new().embeds(main_tweet.0);
+            let res = msg.channel_id.send_message(&ctx.http, builder).await;
 
-    if let Err(why) = res {
-        error!("Error sending message: {why:?}");
-    }
-
-    for link in main_tweet.1 {
-        if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
-            error!("Error sending message: {why:?}");
-        }
-    }
-
-    if !supress_quote {
-        if let Some(quote) = &info.tweet.quote {
-            info!("Quote tweet found: {}", quote.url);
-
-            let quote_tweet = generate_tweet_embeds(quote, true).await;
-            let quote_builder = CreateMessage::new().embeds(quote_tweet.0);
-            let quote_res = msg.channel_id.send_message(&ctx.http, quote_builder).await;
-
-            if let Err(why) = quote_res {
+            if let Err(why) = res {
                 error!("Error sending message: {why:?}");
             }
 
-            for link in quote_tweet.1 {
+            for link in main_tweet.1 {
                 if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
                     error!("Error sending message: {why:?}");
+                }
+            }
+
+            if !supress_quote {
+                if let Some(quote) = &info.tweet.quote {
+                    info!("Quote tweet found: {}", quote.url);
+
+                    let quote_tweet = generate_tweet_embeds(quote, true).await;
+                    let quote_builder = CreateMessage::new().embeds(quote_tweet.0);
+                    let quote_res = msg.channel_id.send_message(&ctx.http, quote_builder).await;
+
+                    if let Err(why) = quote_res {
+                        error!("Error sending message: {why:?}");
+                    }
+
+                    for link in quote_tweet.1 {
+                        if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
+                            error!("Error sending message: {why:?}");
+                        }
+                    }
                 }
             }
         }
@@ -59,8 +63,6 @@ async fn generate_tweet_embeds(tweet: &Tweet, is_quote: bool) -> (Vec<CreateEmbe
 
     let mut embeds: Vec<CreateEmbed> = Vec::new();
     let mut videos: Vec<String> = Vec::new();
-
-    
 
     if let Some(media) = &tweet.media {
         for link in media.media.clone() {
@@ -84,16 +86,17 @@ async fn generate_tweet_embeds(tweet: &Tweet, is_quote: bool) -> (Vec<CreateEmbe
                                 .description(&tweet.text)
                                 .image(link.url)
                                 .color(Color::BLUE)
-                                .footer(
-                                    CreateEmbedFooter::new("Twitter")
-                                        .icon_url("https://abs.twimg.com/icons/apple-touch-icon-192x192.png"),
-                                )
-                                .timestamp(Timestamp::from_unix_timestamp(tweet.timestamp).unwrap()),
+                                .footer(CreateEmbedFooter::new("Twitter").icon_url(
+                                    "https://abs.twimg.com/icons/apple-touch-icon-192x192.png",
+                                ))
+                                .timestamp(
+                                    Timestamp::from_unix_timestamp(tweet.timestamp).unwrap(),
+                                ),
                         );
                     } else {
                         embeds.push(CreateEmbed::new().url(&tweet.url).image(link.url))
                     }
-                },
+                }
                 "video" => videos.push(link.url),
                 _ => info!("Unknown type: {}", link.kind),
             }

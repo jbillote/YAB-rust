@@ -30,6 +30,8 @@ pub struct Author {
 pub struct Media {
     #[serde(alias = "all")]
     pub media: Vec<Attachment>,
+    pub videos: Option<Vec<Attachment>>,
+    pub photos: Option<Vec<Attachment>>,
 }
 
 #[derive(Deserialize, Clone)]
