@@ -15,7 +15,7 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supres
     let info = get_tweet_info(uri.as_str()).await;
 
     if let Some(media) = &info.tweet.media {
-        if media.videos.is_some() || media.photos.clone().is_some_and(|p| p.len() > 1) {
+        if media.videos.is_some() || media.photos.as_ref().is_some_and(|p| p.len() > 1) {
             let main_tweet = generate_tweet_embeds(&info.tweet, false).await;
 
             let builder = CreateMessage::new().embeds(main_tweet.0);
