@@ -57,7 +57,7 @@ impl EventHandler for Handler {
 
     async fn message(&self, ctx: Context, msg: Message) {
         let split_message = msg.content.split(" ");
-        let mut supress_quote = true;
+        let mut supress_quote = false;
         for (ndx, m) in split_message.enumerate() {
             supress_quote = if ndx == 0 && m == ".nq" {
                 true

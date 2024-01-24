@@ -14,39 +14,45 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supres
     let uri = trim_regex.find(url).unwrap();
     let info = get_tweet_info(uri.as_str()).await;
 
-    if let Some(media) = &info.tweet.media {
-        if media.videos.is_some() || media.photos.as_ref().is_some_and(|p| p.len() > 1) {
-            let main_tweet = generate_tweet_embeds(&info.tweet, false).await;
+    if msg.embeds.len() < 1
+        || info
+            .tweet
+            .media
+            .as_ref()
+            .is_some_and(|m| m.videos.is_some() || m.photos.as_ref().is_some_and(|p| p.len() > 1))
+    {
+        let main_tweet = generate_tweet_embeds(&info.tweet, false).await;
 
-            let builder = CreateMessage::new().embeds(main_tweet.0);
-            let res = msg.channel_id.send_message(&ctx.http, builder).await;
+        let builder = CreateMessage::new()
+            .embeds(main_tweet.0)
+            .reference_message(msg);
+        let res = msg.channel_id.send_message(&ctx.http, builder).await;
 
-            if let Err(why) = res {
+        if let Err(why) = res {
+            error!("Error sending message: {why:?}");
+        }
+
+        for link in main_tweet.1 {
+            if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
                 error!("Error sending message: {why:?}");
             }
+        }
 
-            for link in main_tweet.1 {
-                if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
+        if !supress_quote {
+            if let Some(quote) = &info.tweet.quote {
+                info!("Quote tweet found: {}", quote.url);
+
+                let quote_tweet = generate_tweet_embeds(quote, true).await;
+                let quote_builder = CreateMessage::new().embeds(quote_tweet.0);
+                let quote_res = msg.channel_id.send_message(&ctx.http, quote_builder).await;
+
+                if let Err(why) = quote_res {
                     error!("Error sending message: {why:?}");
                 }
-            }
 
-            if !supress_quote {
-                if let Some(quote) = &info.tweet.quote {
-                    info!("Quote tweet found: {}", quote.url);
-
-                    let quote_tweet = generate_tweet_embeds(quote, true).await;
-                    let quote_builder = CreateMessage::new().embeds(quote_tweet.0);
-                    let quote_res = msg.channel_id.send_message(&ctx.http, quote_builder).await;
-
-                    if let Err(why) = quote_res {
+                for link in quote_tweet.1 {
+                    if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
                         error!("Error sending message: {why:?}");
-                    }
-
-                    for link in quote_tweet.1 {
-                        if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
-                            error!("Error sending message: {why:?}");
-                        }
                     }
                 }
             }
