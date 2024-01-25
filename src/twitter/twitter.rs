@@ -3,7 +3,9 @@ use crate::models::fxtwitter::{FXTwitter, Tweet};
 use regex::Regex;
 use reqwest::{header, header::HeaderMap, header::HeaderValue, Error};
 use serenity::{
-    builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage},
+    builder::{
+        CreateAllowedMentions, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage,
+    },
     client::Context,
     model::{channel::Message, colour::Color, timestamp::Timestamp},
 };
@@ -25,7 +27,8 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supres
 
         let builder = CreateMessage::new()
             .embeds(main_tweet.0)
-            .reference_message(msg);
+            .reference_message(msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
         let res = msg.channel_id.send_message(&ctx.http, builder).await;
 
         if let Err(why) = res {
