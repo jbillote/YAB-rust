@@ -9,7 +9,7 @@ use serenity::{
     model::{application::Command, application::Interaction, channel::Message, gateway::Ready},
     Client,
 };
-use std::{env, fs, process::exit};
+use std::{env, fs, process::exit, thread, time};
 use toml;
 use tracing::{error, info};
 use tracing_subscriber::fmt;
@@ -56,6 +56,9 @@ impl EventHandler for Handler {
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
+        // Wait for embeds; this time is probably too long, but this should give time for any to load
+        thread::sleep(time::Duration::from_secs(5));
+
         let split_message = msg.content.split(" ");
         let mut supress_quote = false;
         for (ndx, m) in split_message.enumerate() {

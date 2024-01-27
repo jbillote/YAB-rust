@@ -9,16 +9,12 @@ use serenity::{
     client::Context,
     model::{channel::Message, colour::Color, timestamp::Timestamp},
 };
-use std::{thread, time};
 use tracing::{error, info};
 
 pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supress_quote: bool) {
     let trim_regex = Regex::new(r"\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
     let uri = trim_regex.find(url).unwrap();
     let info = get_tweet_info(uri.as_str()).await;
-
-    // Wait for embeds; this time is probably too long, but this should give time for any to load
-    thread::sleep(time::Duration::from_secs(5));
 
     if msg.embeds.len() < 1
         || info
@@ -27,7 +23,7 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supres
             .as_ref()
             .is_some_and(|m| m.videos.is_some() || m.photos.as_ref().is_some_and(|p| p.len() > 1))
     {
-        info!("No embeds found, generating new ones");
+        info!("No embeds or videos found or existing embed had more than one image, generating new ones");
 
         let main_tweet = generate_tweet_embeds(&info.tweet, false).await;
 
@@ -66,6 +62,8 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supres
                 }
             }
         }
+    } else {
+        info!("Embed found, but didn't have any videos or had one or no images, not generating embeds");
     }
 }
 
