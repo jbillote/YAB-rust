@@ -1,4 +1,4 @@
-use crate::models::fxtwitter::{FXTwitter, Tweet};
+use crate::models::fxtwitter::{FXTwitter, Media, Tweet};
 
 use regex::Regex;
 use reqwest::{header, header::HeaderMap, header::HeaderValue, Error};
@@ -9,6 +9,7 @@ use serenity::{
     client::Context,
     model::{channel::Message, colour::Color, timestamp::Timestamp},
 };
+use std::{thread, time};
 use tracing::{error, info};
 
 pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supress_quote: bool) {
@@ -16,7 +17,19 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supres
     let uri = trim_regex.find(url).unwrap();
     let info = get_tweet_info(uri.as_str()).await;
 
-    if msg.embeds.len() < 1
+    // Give time for embeds to load
+    thread::sleep(time::Duration::from_secs(5));
+
+    // Refresh embeds
+    let m = msg.channel_id.message(&ctx.http, msg.id).await.unwrap();
+
+    let default_media = Media {
+        media: Vec::new(),
+        videos: None,
+        photos: None,
+    };
+
+    if m.embeds.len() < 1
         || info
             .tweet
             .media

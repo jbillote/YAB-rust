@@ -56,9 +56,6 @@ impl EventHandler for Handler {
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
-        // Wait for embeds; this time is probably too long, but this should give time for any to load
-        thread::sleep(time::Duration::from_secs(5));
-
         let split_message = msg.content.split(" ");
         let mut supress_quote = false;
         for (ndx, m) in split_message.enumerate() {
@@ -70,6 +67,7 @@ impl EventHandler for Handler {
             let twitter_regex =
                 Regex::new(r"(\bx|\btwitter)\.com\/\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
             if twitter_regex.is_match(m) {
+                info!("Twitter link found");
                 let url = twitter_regex.find(m).unwrap();
                 twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str(), supress_quote)
                     .await;
