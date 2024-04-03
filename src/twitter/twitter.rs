@@ -77,6 +77,30 @@ pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supres
         }
     } else {
         info!("Embed found, but didn't have any videos or had one or no images, not generating embeds");
+
+        if !supress_quote {
+            if let Some(quote) = &info.tweet.quote {
+                info!("Quote tweet found : {}", quote.url);
+
+                let quote_tweet = generate_tweet_embeds(quote, true).await;
+
+                let builder = CreateMessage::new()
+                    .embeds(quote_tweet.0)
+                    .reference_message(msg)
+                    .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
+                let res = msg.channel_id.send_message(&ctx.http, builder).await;
+
+                if let Err(why) = res {
+                    error!("Error sending message: {why:?}");
+                }
+
+                for link in quote_tweet.1 {
+                    if let Err(why) = msg.channel_id.say(&ctx.http, link).await {
+                        error!("Error sending message: {why:?}");
+                    }
+                }
+            }
+        }
     }
 }
 
