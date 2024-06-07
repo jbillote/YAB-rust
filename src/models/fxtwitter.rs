@@ -12,6 +12,8 @@ pub struct Tweet {
     pub author: Author,
     #[serde(alias = "created_timestamp")]
     pub timestamp: i64,
+    #[serde(alias = "possibly_sensitive")]
+    pub nsfw: bool,
     pub media: Option<Media>,
     pub quote: Option<Box<Tweet>>,
 }
