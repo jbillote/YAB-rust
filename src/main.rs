@@ -57,21 +57,26 @@ impl EventHandler for Handler {
 
     async fn message(&self, ctx: Context, msg: Message) {
         let split_message = msg.content.split(" ");
-        let mut supress_quote = false;
+        let mut peekable = split_message.clone().peekable();
+        let mut supress_quote = peekable.peek().is_some_and(|&v| v == ".nq");
+        let mut spoiler = false;
         for (ndx, m) in split_message.enumerate() {
-            supress_quote = if ndx == 0 && m == ".nq" {
+            // TODO: Add more robust spoiler checks, i.e. check for closed ||
+            spoiler = if &m[0..2] == "||" {
                 true
             } else {
-                supress_quote
+                spoiler
             };
+
             let twitter_regex =
                 Regex::new(r"(\bx|\btwitter)\.com\/\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
             if twitter_regex.is_match(m) {
                 info!("Twitter link found");
                 let url = twitter_regex.find(m).unwrap();
-                twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str(), supress_quote)
+                twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str(), spoiler, supress_quote)
                     .await;
             }
+            peekable.next();
         }
     }
 

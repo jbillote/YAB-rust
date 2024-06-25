@@ -12,7 +12,12 @@ use serenity::{
 use std::{thread, time};
 use tracing::{error, info};
 
-pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, supress_quote: bool) {
+pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, spoiler: bool, supress_quote: bool) {
+    if spoiler {
+        info!("Tweet sent as spoiler, do not generate embeds");
+        return;
+    }
+
     let trim_regex = Regex::new(r"\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
     let uri = trim_regex.find(url).unwrap();
     let info = get_tweet_info(uri.as_str()).await;
