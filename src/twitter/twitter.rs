@@ -12,7 +12,13 @@ use serenity::{
 use std::{thread, time};
 use tracing::{error, info};
 
-pub async fn process_twitter_url(ctx: &Context, msg: &Message, url: &str, spoiler: bool, supress_quote: bool) {
+pub async fn process_twitter_url(
+    ctx: &Context,
+    msg: &Message,
+    url: &str,
+    spoiler: bool,
+    supress_quote: bool,
+) {
     if spoiler {
         info!("Tweet sent as spoiler, do not generate embeds");
         return;

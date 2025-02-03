@@ -1,3 +1,4 @@
+use anyhow::Context as _;
 use regex::Regex;
 use serde::Deserialize;
 use serenity::{
@@ -9,10 +10,9 @@ use serenity::{
     model::{application::Command, application::Interaction, channel::Message, gateway::Ready},
     Client,
 };
+use shuttle_runtime::SecretStore;
 use std::{env, fs, process::exit, thread, time};
-use toml;
 use tracing::{error, info};
-use tracing_subscriber::fmt;
 
 mod commands;
 mod models;
@@ -62,19 +62,21 @@ impl EventHandler for Handler {
         let mut spoiler = false;
         for (ndx, m) in split_message.enumerate() {
             // TODO: Add more robust spoiler checks, i.e. check for closed ||
-            spoiler = if &m[0..2] == "||" {
-                true
-            } else {
-                spoiler
-            };
+            spoiler = if &m[0..2] == "||" { true } else { spoiler };
 
             let twitter_regex =
                 Regex::new(r"(\bx|\btwitter)\.com\/\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
             if twitter_regex.is_match(m) {
                 info!("Twitter link found");
                 let url = twitter_regex.find(m).unwrap();
-                twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str(), spoiler, supress_quote)
-                    .await;
+                twitter::twitter::process_twitter_url(
+                    &ctx,
+                    &msg,
+                    url.as_str(),
+                    spoiler,
+                    supress_quote,
+                )
+                .await;
             }
             peekable.next();
         }
@@ -89,27 +91,13 @@ impl EventHandler for Handler {
     }
 }
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt::init();
-
-    let args: Vec<String> = env::args().collect();
-    let config_path = &args[1];
-    let config_file = match fs::read_to_string(config_path) {
-        Ok(c) => c,
-        Err(_) => {
-            error!("Could not read file {}", config_path);
-            exit(1);
-        }
-    };
-    let config: Config = match toml::from_str(&config_file) {
-        Ok(c) => c,
-        Err(_) => {
-            error!("Unable to read data from {}", config_path);
-            exit(1);
-        }
-    };
-    let token = config.discord.token;
+#[shuttle_runtime::main]
+async fn serenity(
+    #[shuttle_runtime::Secrets] secrets: SecretStore,
+) -> shuttle_serenity::ShuttleSerenity {
+    let token = secrets
+        .get("DISCORD_TOKEN")
+        .context("DISCORD_TOKEN was not found")?;
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
     let mut client = Client::builder(&token, intents)
@@ -117,8 +105,5 @@ async fn main() {
         .await
         .expect("Error creating client");
 
-    if let Err(why) = client.start().await {
-        error!("Client error: {why:?}");
-        exit(1);
-    }
+    Ok(client.into())
 }
