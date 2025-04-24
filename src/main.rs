@@ -71,14 +71,8 @@ impl EventHandler for Handler {
             if twitter_regex.is_match(m) {
                 info!("Twitter link found");
                 let url = twitter_regex.find(m).unwrap();
-                twitter::twitter::process_twitter_url(
-                    &ctx,
-                    &msg,
-                    url.as_str(),
-                    spoiler,
-                    supress_quote,
-                )
-                .await;
+                twitter::process_twitter_url(&ctx, &msg, url.as_str(), spoiler, supress_quote)
+                    .await;
             } else if pixiv_regex.is_match(m) {
                 info!("Pixiv link found");
                 let id = pixiv_regex
