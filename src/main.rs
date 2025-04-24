@@ -16,6 +16,7 @@ use tracing_subscriber::fmt;
 
 mod commands;
 mod models;
+mod pixiv;
 mod twitter;
 
 struct Handler;
@@ -62,19 +63,32 @@ impl EventHandler for Handler {
         let mut spoiler = false;
         for (ndx, m) in split_message.enumerate() {
             // TODO: Add more robust spoiler checks, i.e. check for closed ||
-            spoiler = if &m[0..2] == "||" {
-                true
-            } else {
-                spoiler
-            };
+            spoiler = if &m[0..2] == "||" { true } else { spoiler };
 
             let twitter_regex =
                 Regex::new(r"(\bx|\btwitter)\.com\/\w{1,15}\/(status|statuses)\/\d{2,20}").unwrap();
+            let pixiv_regex = Regex::new(r"\bpixiv\.net\/\w{2}\/artworks\/\d{2,20}").unwrap();
             if twitter_regex.is_match(m) {
                 info!("Twitter link found");
                 let url = twitter_regex.find(m).unwrap();
-                twitter::twitter::process_twitter_url(&ctx, &msg, url.as_str(), spoiler, supress_quote)
-                    .await;
+                twitter::twitter::process_twitter_url(
+                    &ctx,
+                    &msg,
+                    url.as_str(),
+                    spoiler,
+                    supress_quote,
+                )
+                .await;
+            } else if pixiv_regex.is_match(m) {
+                info!("Pixiv link found");
+                let id = pixiv_regex
+                    .find(m)
+                    .unwrap()
+                    .as_str()
+                    .split("/")
+                    .last()
+                    .unwrap();
+                pixiv::process_pixiv_id(&ctx, &msg, &id, spoiler).await;
             }
             peekable.next();
         }
