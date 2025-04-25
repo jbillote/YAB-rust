@@ -9,7 +9,7 @@ use serenity::{
     client::Context,
     model::{channel::Message, colour::Color, timestamp::Timestamp},
 };
-use std::{thread, time};
+use std::{str::FromStr, thread, time};
 use tracing::{error, info};
 
 pub async fn process_pixiv_id(ctx: &Context, msg: &Message, id: &str, spoiler: bool) {
@@ -56,10 +56,11 @@ async fn generate_pixiv_embed(pixiv: &Phixiv) -> Vec<CreateEmbed> {
                             .icon_url(&pixiv.profile_image_url)
                             .url(format!("https://www.pixiv.net/users/{}", &pixiv.author_id)),
                     )
-                    .description(&pixiv.description.replace("<br />", "\n"))
+                    .description(strip_html(&pixiv.description))
                     .image(link)
                     .color(Color::BLUE)
-                    .footer(CreateEmbedFooter::new("Pixiv")),
+                    .footer(CreateEmbedFooter::new("Pixiv"))
+                    .timestamp(Timestamp::from_str(&pixiv.create_date).unwrap()),
             );
         } else {
             embeds.push(CreateEmbed::new().url(&pixiv.url).image(link));
@@ -67,4 +68,10 @@ async fn generate_pixiv_embed(pixiv: &Phixiv) -> Vec<CreateEmbed> {
     }
 
     return embeds;
+}
+
+fn strip_html(text: &str) -> String {
+    let re = Regex::new(r#"<a.*">"#).unwrap();
+    let stripped_string = re.replace_all(text, "");
+    return stripped_string.replace("<br />", "\n").replace("</a>", "");
 }
